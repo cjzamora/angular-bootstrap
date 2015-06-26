@@ -50,7 +50,7 @@ gulp.task('install-vendor', function() {
 });
 
 // clean vendor folder
-gulp.task('clean-vendor', function(cb) {
+gulp.task('clean-vendor', function() {
     // initialize path to clean
     return gulp
     // initialize path to clean, read false
