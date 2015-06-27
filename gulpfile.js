@@ -14,6 +14,8 @@ var rename   = require('gulp-rename');
 var minify   = require('gulp-minify-css');
 // require gulp rimraf 
 var rimraf   = require('gulp-rimraf');
+// require gulp inject
+var inject   = require('gulp-inject');
 // require run sequence
 var sequence = require('run-sequence');
 
@@ -41,23 +43,73 @@ var APP_SCRIPTS_PATH    = __dirname + '/application/assets/scripts/**/*.js';
 // application styles path
 var APP_STYLES_PATH     = __dirname + '/application/assets/styles/**/*.css';
 
-// move bower_components/* to vendor
-gulp.task('install-vendor', function() {
-    // initialize path to move
-    return gulp.src([BOWER_PATH + '/**/*'])
-    // save to destination path
-    .pipe(gulp.dest(APP_VENDOR_PATH));
-});
+// injector target path
+var INJECT_TARGET_PATH  = __dirname + '/application/views/index.html';
 
-// clean vendor folder
-gulp.task('clean-vendor', function() {
-    // initialize path to clean
-    return gulp
-    // initialize path to clean, read false
-    .src(APP_VENDOR_PATH, { read : false })
-    // clean directory
-    .pipe(rimraf({ force : true }));
-});
+// application files
+var files = {
+    // default application scripts
+    'default' : {
+        tag   : { starttag : '<!-- inject:app-default -->' },
+        path  : [
+            './application/app.constants.js',
+            './application/app.module.js',
+            './application/app.config.js',
+            './application/app.routes.js'
+        ]
+    },
+
+    // production application scripts
+    'app-scripts' : {
+        tag  : { starttag : '<!-- inject:app-scripts -->' },
+        path : './application/build/app/**/*.js'
+    },
+    // production scripts
+    'scripts' : {
+        tag  : { starttag : '<!-- inject:scripts -->' },
+        path : './application/build/assets/scripts/**/*.js'
+    },
+    // production styles
+    'styles' : {
+        tag  : { starttag : '<!-- inject:styles -->' },
+        path : './application/build/assets/styles/**/*.css'
+    },
+
+    // development application scripts
+    'app-scripts-dev' : {
+        tag  : { starttag : '<!-- inject:app-scripts -->', }, 
+        path : [
+            './application/controllers/**/*.js',
+            './application/components/**/*.js',
+            './application/decorators/**/*.js',
+            './application/services/**/*.js'
+        ]
+    },
+    // development scripts
+    'scripts-dev' : {
+        tag  : { starttag : '<!-- inject:scripts -->' },
+        path : './application/assets/scripts/**/*.js'
+    },
+    // development styles
+    'styles-dev' : {
+        tag  : { starttag : '<!-- inject:styles -->' },
+        path : './application/assets/styles/**/*.css'
+    },
+
+    // production / dev 3rd party scripts
+    'vendor-scripts' : {
+        tag  : { starttag : '<!-- inject:third-party-scripts -->' },
+        path : [
+            './application/assets/vendor/angular/angular.min.js',
+            './application/assets/vendor/angular-ui-router/release/angular-ui-router.min.js'
+        ]
+    },
+    // production / dev 3rd party styles
+    'vendor-styles' : {
+        tag  : { starttag : '<!-- inject:third-party-styles -->' },
+        path : []
+    }
+};
 
 // minify controllers
 gulp.task('minify-controllers', function() {
@@ -92,7 +144,7 @@ gulp.task('minify-decorators', function() {
     // initialize gulp, read src
     return gulp.src(DECORATOR_PATH)
     // set build file name
-    .pipe(concat('decorator.js'))
+    .pipe(concat('decorators.js'))
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -143,11 +195,6 @@ gulp.task('minify-styles', function() {
     .pipe(gulp.dest(STYLES_BUILD_PATH));
 });
 
-// set up injector
-gulp.task('inject-dependency', function() {
-
-});
-
 // set up build task
 gulp.task('build', [
     'minify-controllers', 
@@ -176,18 +223,183 @@ gulp.task('clean', function() {
 gulp.task('watch', function() {
     // watch folders
     gulp.watch([
-        'application/controllers/**/*.js',
-        'application/components/**/*.js',
-        'application/decorator/**/*.js',
-        'application/services/**/*.js',
-        'application/assets/styles/**/*.css',
-        'application/assets/scripts/**/*.js'
-    ], ['build']);
+        CONTROLLER_PATH,
+        COMPONENTS_PATH,
+        DECORATOR_PATH,
+        SERVICES_PATH,
+        APP_STYLES_PATH,
+        APP_SCRIPTS_PATH
+    ], ['build', 'inject']);
+});
+
+// set up gulp watch-dev
+gulp.task('watch-dev', function() {
+    // watch folders
+    gulp.watch([
+        CONTROLLER_PATH,
+        COMPONENTS_PATH,
+        DECORATOR_PATH,
+        SERVICES_PATH,
+        APP_STYLES_PATH,
+        APP_SCRIPTS_PATH
+    ], ['inject-dev']);
+});
+
+// move bower_components/* to vendor
+gulp.task('install-vendor', function() {
+    // initialize path to move
+    return gulp.src([BOWER_PATH + '/**/*'])
+    // save to destination path
+    .pipe(gulp.dest(APP_VENDOR_PATH));
+});
+
+// clean vendor folder
+gulp.task('clean-vendor', function() {
+    // initialize path to clean
+    return gulp
+    // initialize path to clean, read false
+    .src(APP_VENDOR_PATH, { read : false })
+    // clean directory
+    .pipe(rimraf({ force : true }));
 });
 
 // set up install task
 gulp.task('install', function(callback) {
+    // run clean-vendor, install-vendor task
     sequence('clean-vendor', 'install-vendor', callback);
+});
+
+// set up injector
+gulp.task('inject', function() {
+    // default option
+    var options = { read : false };
+
+    // default scripts
+    var appDefault      = files['default'];
+    // app scripts
+    var appScripts      = files['app-scripts'];
+    // scripts
+    var scripts         = files['scripts'];
+    // styles
+    var styles          = files['styles'];
+    // vendor scripts
+    var vendorScripts   = files['vendor-scripts'];
+    // vendor styles
+    var vendorStyles    = files['vendor-styles'];
+
+    // set self closing tags for <link />
+    styles.tag.selfClosingTag = true;
+
+    // setup dependency injector
+    return gulp.src(INJECT_TARGET_PATH)
+    // inject app default files
+    .pipe(inject(gulp.src(appDefault.path, options), appDefault.tag))
+    // inject app scripts
+    .pipe(inject(gulp.src(appScripts.path, options), appScripts.tag))
+    // inject scripts
+    .pipe(inject(gulp.src(scripts.path, options), scripts.tag))
+    // inject styles
+    .pipe(inject(gulp.src(styles.path, options), styles.tag))
+    // inject vendor scripts
+    .pipe(inject(gulp.src(vendorScripts.path, options), vendorScripts.tag))
+    // inject vendor styles
+    .pipe(inject(gulp.src(vendorStyles.path, options), vendorStyles.tag))
+    // set destination
+    .pipe(gulp.dest('.'));
+});
+
+// set up injector - dev
+gulp.task('inject-dev', function() {
+    // default option
+    var options = { read : false };
+
+    // default scripts
+    var appDefault      = files['default'];
+    // app scripts
+    var appScripts      = files['app-scripts-dev'];
+    // scripts
+    var scripts         = files['scripts-dev'];
+    // styles
+    var styles          = files['styles-dev'];
+    // vendor scripts
+    var vendorScripts   = files['vendor-scripts'];
+    // vendor styles
+    var vendorStyles    = files['vendor-styles'];
+
+    // set self closing tags for <link />
+    styles.tag.selfClosingTag = true;
+
+    // setup dependency injector
+    return gulp.src(INJECT_TARGET_PATH)
+    // inject app default files
+    .pipe(inject(gulp.src(appDefault.path, options), appDefault.tag))
+    // inject app scripts
+    .pipe(inject(gulp.src(appScripts.path, options), appScripts.tag))
+    // inject scripts
+    .pipe(inject(gulp.src(scripts.path, options), scripts.tag))
+    // inject styles
+    .pipe(inject(gulp.src(styles.path, options), styles.tag))
+    // inject vendor scripts
+    .pipe(inject(gulp.src(vendorScripts.path, options), vendorScripts.tag))
+    // inject vendor styles
+    .pipe(inject(gulp.src(vendorStyles.path, options), vendorStyles.tag))
+    // set destination
+    .pipe(gulp.dest('.'));
+});
+
+// set up injector-clean
+gulp.task('inject-clean', function() {
+    // default option
+    var options = { read : false };
+
+    // default scripts
+    var appDefault      = files['default'];
+    // app scripts
+    var appScripts      = files['app-scripts-dev'];
+    // scripts
+    var scripts         = files['scripts-dev'];
+    // styles
+    var styles          = files['styles-dev'];
+    // vendor scripts
+    var vendorScripts   = files['vendor-scripts'];
+    // vendor styles
+    var vendorStyles    = files['vendor-styles'];
+
+    // setup dependency injector
+    return gulp.src(INJECT_TARGET_PATH)
+    // inject app default files
+    .pipe(inject(gulp.src('', options), appDefault.tag))
+    // inject app scripts
+    .pipe(inject(gulp.src('', options), appScripts.tag))
+    // inject scripts
+    .pipe(inject(gulp.src('', options), scripts.tag))
+    // inject styles
+    .pipe(inject(gulp.src('', options), styles.tag))
+    // inject vendor scripts
+    .pipe(inject(gulp.src('', options), vendorScripts.tag))
+    // inject vendor styles
+    .pipe(inject(gulp.src('', options), vendorStyles.tag))
+    // set destination
+    .pipe(gulp.dest('.'));
+});
+
+// production deployment task
+gulp.task('deploy', function(callback) {
+    // 1. Install bower components to vendor
+    // 2. Clean build files
+    // 3. Build files,
+    // 4. Clean Injected files,
+    // 5. Inject files
+    sequence('install', 'clean', 'build', 'inject-clean', 'inject', callback);
+});
+
+// development deployment task
+gulp.task('deploy-dev', function(callback) {
+    // 1. Install bower components to vendor
+    // 2. Clean build files
+    // 3. Clean Injected files,
+    // 4. Inject files
+    sequence('install', 'clean', 'inject-clean', 'inject-dev', callback);
 });
 
 // set up default task
