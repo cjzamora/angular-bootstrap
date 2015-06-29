@@ -252,27 +252,31 @@ gulp.task('clean', function() {
 // set up gulp watcher
 gulp.task('watch', function() {
     // watch folders
-    gulp.watch([
+    watcher([
         CONTROLLER_PATH,
         COMPONENTS_PATH,
         DECORATOR_PATH,
         SERVICES_PATH,
-        APP_STYLES_PATH,
         APP_SCRIPTS_PATH
-    ], ['build', 'inject']);
+    ], function() {
+        // run this actions
+        sequence('lint', 'build', 'inject-clean', 'inject');
+    });
 });
 
 // set up gulp watch-dev
 gulp.task('watch-dev', function() {
     // watch folders
-    gulp.watch([
+    watcher([
         CONTROLLER_PATH,
         COMPONENTS_PATH,
         DECORATOR_PATH,
         SERVICES_PATH,
-        APP_STYLES_PATH,
         APP_SCRIPTS_PATH
-    ], ['inject-dev']);
+    ], function() {
+        // run this actions
+        sequence('lint', 'inject-clean', 'inject-dev');
+    });
 });
 
 // move bower_components/* to vendor
@@ -423,6 +427,22 @@ gulp.task('inject-clean', function() {
     .pipe(inject(gulp.src('', options), vendorStyles.tag))
     // set destination
     .pipe(gulp.dest('.'));
+});
+
+// javascript linter task
+gulp.task('lint', function() {
+    // set script source
+    return gulp.src([
+        CONTROLLER_PATH,
+        COMPONENTS_PATH,
+        DECORATOR_PATH,
+        SERVICES_PATH,
+        APP_SCRIPTS_PATH
+    ])
+    // set jshint
+    .pipe(jshint('.jshintrc'))
+    // set jshint reporter
+    .pipe(jshint.reporter('jshint-stylish'));
 });
 
 // production deployment task
