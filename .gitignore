@@ -21,3 +21,10 @@ build
 # ignore vendor folders
 vendor
 application/assets/vendor
+
+# exclude .htaccess
+!.htaccess
+!.travis.yml
+!.jshintrc
+!.jshintignore
+!.npmignore
