@@ -11,7 +11,7 @@ angular
 	// default state
 	.state('default', {
 		url 		: '/',
-		template 	: '<h1>Angular Bootstrap Application',
+		template 	: '<h1>Angular Bootstrap Application</h1>',
 		data 		: { title : 'Homepage' }
 	});
 })

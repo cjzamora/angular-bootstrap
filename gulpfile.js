@@ -18,6 +18,24 @@ var rimraf   = require('gulp-rimraf');
 var inject   = require('gulp-inject');
 // require run sequence
 var sequence = require('run-sequence');
+// require main bower files
+var bower    = require('main-bower-files');
+
+// set bower main files options (scripts)
+bowerScripts = bower({
+    includeDev      : 'inclusive',
+    checkExistence  : true,
+    debugging       : true,
+    filter          : new RegExp('.*js$', 'i')
+});
+
+// set bower main files options (styles)
+bowerStyles = bower({
+    includeDev      : 'inclusive',
+    checkExistence  : true,
+    debugging       : true,
+    filter          : new RegExp('.*css$', 'i')
+});
 
 // bower components path
 var BOWER_PATH 		    = __dirname + '/bower_components';
@@ -99,10 +117,7 @@ var files = {
     // production / dev 3rd party scripts
     'vendor-scripts' : {
         tag  : { starttag : '<!-- inject:third-party-scripts -->' },
-        path : [
-            './application/assets/vendor/angular/angular.min.js',
-            './application/assets/vendor/angular-ui-router/release/angular-ui-router.min.js'
-        ]
+        path : [__dirname + '/application/vendor/scripts.min.js']
     },
     // production / dev 3rd party styles
     'vendor-styles' : {
@@ -290,6 +305,12 @@ gulp.task('inject', function() {
     // set self closing tags for <link />
     styles.tag.selfClosingTag = true;
 
+    // replace paths
+    bowerScripts = replacePaths(bowerScripts.concat(vendorScripts.path), BOWER_PATH, APP_VENDOR_PATH);
+
+    // replace paths
+    bowerStyles  = replacePaths(bowerStyles.concat(vendorStyles.path), BOWER_PATH, APP_VENDOR_PATH);
+
     // setup dependency injector
     return gulp.src(INJECT_TARGET_PATH)
     // inject app default files
@@ -301,9 +322,9 @@ gulp.task('inject', function() {
     // inject styles
     .pipe(inject(gulp.src(styles.path, options), styles.tag))
     // inject vendor scripts
-    .pipe(inject(gulp.src(vendorScripts.path, options), vendorScripts.tag))
+    .pipe(inject(gulp.src(bowerScripts, options), vendorScripts.tag))
     // inject vendor styles
-    .pipe(inject(gulp.src(vendorStyles.path, options), vendorStyles.tag))
+    .pipe(inject(gulp.src(bowerStyles, options), vendorStyles.tag))
     // set destination
     .pipe(gulp.dest('.'));
 });
@@ -329,6 +350,12 @@ gulp.task('inject-dev', function() {
     // set self closing tags for <link />
     styles.tag.selfClosingTag = true;
 
+    // replace paths
+    bowerScripts = replacePaths(bowerScripts.concat(vendorScripts.path), BOWER_PATH, APP_VENDOR_PATH);
+
+    // replace paths
+    bowerStyles  = replacePaths(bowerStyles.concat(vendorStyles.path), BOWER_PATH, APP_VENDOR_PATH);
+    
     // setup dependency injector
     return gulp.src(INJECT_TARGET_PATH)
     // inject app default files
@@ -340,9 +367,9 @@ gulp.task('inject-dev', function() {
     // inject styles
     .pipe(inject(gulp.src(styles.path, options), styles.tag))
     // inject vendor scripts
-    .pipe(inject(gulp.src(vendorScripts.path, options), vendorScripts.tag))
+    .pipe(inject(gulp.src(bowerScripts, options), vendorScripts.tag))
     // inject vendor styles
-    .pipe(inject(gulp.src(vendorStyles.path, options), vendorStyles.tag))
+    .pipe(inject(gulp.src(bowerStyles, options), vendorStyles.tag))
     // set destination
     .pipe(gulp.dest('.'));
 });
@@ -406,3 +433,46 @@ gulp.task('deploy-dev', function(callback) {
 gulp.task('default', function() {
 	gulp.start('watch');
 });
+
+// helper function to replace bower_components
+// to new vendor path, and to also replace .js
+// files to .min.js
+function replacePaths(paths, bowerPath, appVendorPath) {
+    // require fs
+    var fs = require('fs');
+
+    // if no paths
+    if(!paths.length) {
+        return [];
+    }
+
+    // get replaced paths
+    var newPaths = [];
+
+    // iterate on each paths
+    for(var i in paths) {
+        newPaths[i] = paths[i]
+        // replace bower components path
+        .replace(bowerPath, appVendorPath);
+
+        // if not yet .min.js
+        if(newPaths[i].indexOf('.min.js') === -1) {
+            // replace .js to .min.js
+            newPaths[i] = newPaths[i].replace('.js', '.min.js');
+        }
+
+        // if minified exists
+        if(!fs.existsSync(newPaths[i])) {
+            // get back original
+            newPaths[i] = newPaths[i].replace('.min.js', '.js');
+        }
+
+        // if it really does not exists
+        if(!fs.existsSync(newPaths[i])) {
+            // remove that path
+            delete newPaths[i];
+        }
+    }
+
+    return newPaths;
+};
