@@ -20,6 +20,8 @@ var inject   = require('gulp-inject');
 var sequence = require('run-sequence');
 // require main bower files
 var bower    = require('main-bower-files');
+// require gulp revision
+var revision = require('gulp-rev');
 
 // set bower main files options (scripts)
 bowerScripts = bower({
@@ -117,7 +119,7 @@ var files = {
     // production / dev 3rd party scripts
     'vendor-scripts' : {
         tag  : { starttag : '<!-- inject:third-party-scripts -->' },
-        path : [__dirname + '/application/vendor/scripts.min.js']
+        path : []
     },
     // production / dev 3rd party styles
     'vendor-styles' : {
@@ -132,6 +134,8 @@ gulp.task('minify-controllers', function() {
     return gulp.src(CONTROLLER_PATH)
     // set build file name
     .pipe(concat('controllers.js'))
+    // set file revision hash
+    .pipe(revision())
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -146,6 +150,8 @@ gulp.task('minify-components', function() {
     return gulp.src(COMPONENTS_PATH)
     // set build file name
     .pipe(concat('components.js'))
+    // set file revision hash
+    .pipe(revision())
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -160,6 +166,8 @@ gulp.task('minify-decorators', function() {
     return gulp.src(DECORATOR_PATH)
     // set build file name
     .pipe(concat('decorators.js'))
+    // set file revision hash
+    .pipe(revision())
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -174,6 +182,8 @@ gulp.task('minify-services', function() {
     return gulp.src(SERVICES_PATH)
     // set build file name
     .pipe(concat('services.js'))
+    // set file revision hash
+    .pipe(revision())
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -188,6 +198,8 @@ gulp.task('minify-scripts', function() {
     return gulp.src(APP_SCRIPTS_PATH)
     // set build file name
     .pipe(concat('scripts.js'))
+    // set file revision hash
+    .pipe(revision())
     // uglify with variable mangle
     .pipe(uglify({ mangle : true }))
     // rename extension to .min.js
@@ -202,6 +214,8 @@ gulp.task('minify-styles', function() {
     return gulp.src(APP_STYLES_PATH)
     // set build file name
     .pipe(concat('styles.css'))
+    // set file revision hash
+    .pipe(revision())
     // minify css
     .pipe(minify())
     // rename extension to .min.css
@@ -212,6 +226,7 @@ gulp.task('minify-styles', function() {
 
 // set up build task
 gulp.task('build', [
+    'clean',
     'minify-controllers', 
     'minify-components',
     'minify-decorators',
@@ -355,7 +370,7 @@ gulp.task('inject-dev', function() {
 
     // replace paths
     bowerStyles  = replacePaths(bowerStyles.concat(vendorStyles.path), BOWER_PATH, APP_VENDOR_PATH);
-    
+
     // setup dependency injector
     return gulp.src(INJECT_TARGET_PATH)
     // inject app default files
