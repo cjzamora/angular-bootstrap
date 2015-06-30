@@ -10,7 +10,7 @@ angular
 	'ui.router',
 	'ui.router.router',
 	'ui.router.state',
-	'ui.router.state'
+	'ui.router.util'
 ])
 // run block
 .run([function() {
