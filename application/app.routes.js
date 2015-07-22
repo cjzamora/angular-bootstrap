@@ -8,11 +8,27 @@ angular
 
 	// set up application states
 	$stateProvider
-	// default state
-	.state('default', {
-		url 		: '/',
-		template 	: '<h1>Angular Bootstrap Application</h1>',
-		data 		: { title : 'Homepage' }
+	// root scope
+	.state('root', {
+		url 		: '',
+		abstract 	: true,
+		views 		: {
+			'header' : {
+				templateUrl : 'application/views/header.html'
+			},
+			'footer' : {
+				templateUrl : 'application/views/footer.html'
+			}
+		}
+	})
+	// index scope
+	.state('root.index', {
+		url 	: '/',
+		views 	: {
+			'@' : {
+				template : 'BODY'
+			}
+		}
 	});
 })
 // run block
