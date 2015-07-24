@@ -1,7 +1,7 @@
 // require gulp
-var gulp 	 = require('gulp');
+var gulp     = require('gulp');
 // require gulp uglify
-var uglify 	 = require('gulp-uglify');
+var uglify   = require('gulp-uglify');
 // require gulp jshint
 var jshint   = require('gulp-jshint');
 // require gulp concat
@@ -40,7 +40,7 @@ bowerStyles = bower({
 });
 
 // bower components path
-var BOWER_PATH 		    = __dirname + '/bower_components';
+var BOWER_PATH          = __dirname + '/bower_components';
 // application vendor path
 var APP_VENDOR_PATH     = __dirname + '/application/assets/vendor';
 // application build path
@@ -257,7 +257,10 @@ gulp.task('watch', function() {
         COMPONENTS_PATH,
         DECORATOR_PATH,
         SERVICES_PATH,
-        APP_SCRIPTS_PATH
+        APP_SCRIPTS_PATH,
+        STYLES_BUILD_PATH,
+        SCRIPTS_BUILD_PATH,
+        APP_STYLES_PATH
     ], function() {
         // run this actions
         sequence('lint', 'build', 'inject-clean', 'inject');
@@ -272,7 +275,10 @@ gulp.task('watch-dev', function() {
         COMPONENTS_PATH,
         DECORATOR_PATH,
         SERVICES_PATH,
-        APP_SCRIPTS_PATH
+        APP_SCRIPTS_PATH,
+        STYLES_BUILD_PATH,
+        SCRIPTS_BUILD_PATH,
+        APP_STYLES_PATH
     ], function() {
         // run this actions
         sequence('lint', 'inject-clean', 'inject-dev');
@@ -466,7 +472,7 @@ gulp.task('deploy-dev', function(callback) {
 
 // set up default task
 gulp.task('default', function() {
-	gulp.start('watch');
+    gulp.start('watch');
 });
 
 // helper function to replace bower_components
